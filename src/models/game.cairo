@@ -1,4 +1,6 @@
-use starknet::PoseidonTrait;
+use buckshot_roulette::models::{round::Shotgun};
+use core::poseidon::PoseidonTrait;
+use core::hash::{HashStateTrait, HashStateExTrait};
 
 #[derive(Model, Copy, Drop, Serde)]
 struct Game {
@@ -8,7 +10,10 @@ struct Game {
     // 0 is the lobby.
     // waiting for another player to join.
     current_round: u8,
-    number_of_rounds: u8,
+    rounds: u8,
+
+    players: u8,
+    max_players: u8,
 
     shotgun_nonce: felt252,
 }
@@ -28,14 +33,19 @@ impl GameImpl of GameTrait {
     }
 
     fn is_last_round(self: Game) -> bool {
-        self.current_round == self.number_of_rounds
+        self.current_round == self.rounds
     }
 
-    fn generate_shotgun(self: Game) -> Shotgun {
+    fn assert_can_join(self: Game) {
+        self.assert_lobby();
+        assert(self.players < self.max_players, 'Game is full.');
+    }
+
+    fn generate_shotgun(mut self: Game) -> Shotgun {
         let mut state = PoseidonTrait::new();
-        state.update(self.game_id);
-        state.update(self.current_round);
-        state.update(self.number_of_rounds);
+        state.update(self.game_id.into());
+        state.update(self.current_round.into());
+        state.update(self.rounds.into());
         state.update(self.shotgun_nonce);
         self.shotgun_nonce += 1;
 
@@ -43,12 +53,14 @@ impl GameImpl of GameTrait {
         // we split the random number into 2 128-bit numbers.
         let random1: u128 = (random & 0xffffffffffffffffffffffffffffffff).try_into().unwrap();
         // cant use shift here because it is not supported in felt.
-        let random2: u128 = (random - random1).try_into().unwrap();
+        let random2: u128 = (random.try_into().unwrap() - random1).try_into().unwrap();
 
         // we can have a maximum of 10 bullets.
         Shotgun {
-            random1: (random1 % 5 + 1).try_into().unwrap(),
-            random2: (random2 % 5 + 1).try_into().unwrap(),
+            seed: random,
+            real_bullets: (random1 % 5 + 1).try_into().unwrap(),
+            fake_bullets: (random2 % 5 + 1).try_into().unwrap(),
+            nonce: 0,
         }
     }
 }

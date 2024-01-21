@@ -2,7 +2,7 @@ use starknet::ContractAddress;
 
 const MAX_PLAYER_ITEMS: u8 = 8;
 
-#[derive(Copy, Drop, Serde, Introspect)]
+#[derive(Copy, Drop, Serde, Introspect, PartialEq)]
 enum PlayerState {
     Idle: (),
     Handcuffed: (),
@@ -17,7 +17,7 @@ impl PlayerStateFelt252 of Into<PlayerState, felt252> {
     }
 }
 
-#[derive(Copy, Drop, Serde, Introspect)]
+#[derive(Copy, Drop, Serde, Introspect, PartialEq)]
 enum Item {
     // Shotgun deals 2x damage
     Knife: (),
@@ -49,10 +49,11 @@ struct Player {
     #[key]
     game_id: u32,
     #[key]
-    player_id: ContractAddress,
+    player_id: u8,
+
+    address: ContractAddress,
 
     health: u8,
-    state: PlayerState,
 
     // count of each item
     // the player has
@@ -61,4 +62,29 @@ struct Player {
     glasses: u8,
     drinks: u8,
     handcuffs: u8,
+}
+
+#[generate_trait]
+impl PlayerImpl of PlayerTrait {
+    fn assert_caller(self: Player, caller: ContractAddress) {
+        assert(self.address == caller, 'Not player')
+    }
+
+    fn assert_alive(self: Player) {
+        assert(self.health > 0, 'Player is dead')
+    }
+
+    fn assert_can_play(self: Player) {
+        self.assert_alive();
+    }
+
+    fn assert_can_use(self: Player, item: Item) {
+        match item {
+            Item::Knife => assert(self.knives > 0, 'Player has no knives'),
+            Item::Cigarette => assert(self.cigarettes > 0, 'Player has no cigarettes'),
+            Item::Glasses => assert(self.glasses > 0, 'Player has no glasses'),
+            Item::Drink => assert(self.drinks > 0, 'Player has no drinks'),
+            Item::Handcuffs => assert(self.handcuffs > 0, 'Player has no handcuffs'),
+        }
+    }
 }
