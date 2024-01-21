@@ -1,5 +1,6 @@
 use starknet::ContractAddress;
 
+#[derive(Copy, Drop, Serde, Introspect)]
 struct Shotgun {
     real_bullets: u32,
     fake_bullets: u32,
@@ -16,20 +17,9 @@ struct Round {
     shotgun: Shotgun,
 }
 
-#[derive(Model, Copy, Drop, Serde)]
-struct Player {
-    #[key]
-    game_id: u32,
-    #[key]
-    round_id: u8,
-    #[key]
-    player_id: ContractAddress,
-    health: u8,
-    
-    // count of each item
-    // the player has
-    knives: u8,
-    cigarettes: u8,
-    glasses: u8,
-    drinks: u8,
+#[generate_trait]
+impl RoundImpl of RoundTrait {
+    fn assert_turn(self: Round, player: ContractAddress) {
+        assert(self.current_turn == player, 'Not your turn');
+    }
 }

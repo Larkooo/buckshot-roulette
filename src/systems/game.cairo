@@ -11,6 +11,7 @@ mod game {
     use super::IGame;
     use buckshot_roulette::models::{game::Game};
 
+    #[external(v0)]
     impl GameImpl of IGame<TContractState> {
         fn start_game(self: @TContractState, number_of_rounds: u32) {
             assert!(number_of_rounds <= 10, "Number of rounds must be less than 10");

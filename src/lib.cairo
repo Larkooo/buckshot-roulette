@@ -1,12 +1,13 @@
 mod systems {
-    mod actions;
+    mod game;
 }
 
 mod models {
-    mod moves;
-    mod position;
+    mod game;
+    mod player;
+    mod round;
 }
 
 mod tests {
-    mod test_world;
+    // mod test_world;
 }
