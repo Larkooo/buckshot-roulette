@@ -14,6 +14,7 @@ struct Game {
 
     players: u8,
     max_players: u8,
+    winner: u8,
 
     shotgun_nonce: felt252,
 }

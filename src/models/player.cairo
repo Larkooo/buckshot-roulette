@@ -54,6 +54,7 @@ struct Player {
     address: ContractAddress,
 
     health: u8,
+    score: u8,
 
     // count of each item
     // the player has

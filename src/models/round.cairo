@@ -48,7 +48,7 @@ struct Round {
     current_turn: u32,
     shotgun: Shotgun,
 
-    winner: ContractAddress,
+    winner: u8,
 }
 
 
