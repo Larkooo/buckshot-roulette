@@ -7,8 +7,8 @@ const MAX_BULLETS: u32 = 10;
 #[derive(Copy, Drop, Serde, Introspect)]
 struct Shotgun {
     seed: u256,
-    real_bullets: u32,
-    fake_bullets: u32,
+    real_bullets: u8,
+    fake_bullets: u8,
     nonce: felt252,
 }
 
@@ -24,7 +24,8 @@ impl ShotgunImpl of ShotgunTrait {
         state.update(self.nonce);
         state.update(target.into());
 
-        let random = state.finalize().try_into().unwrap() % 2;
+        let random: u256 = state.finalize().into();
+        let random: u8 = (random % 2).try_into().unwrap();
         let is_real = random == 1;
 
         self.real_bullets -= random;

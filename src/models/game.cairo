@@ -42,7 +42,7 @@ impl GameImpl of GameTrait {
         assert(self.players < self.max_players, 'Game is full.');
     }
 
-    fn generate_shotgun(mut self: Game) -> Shotgun {
+    fn generate_shotgun(ref self: Game) -> Shotgun {
         let mut state = PoseidonTrait::new();
         state.update(self.game_id.into());
         state.update(self.current_round.into());
@@ -52,9 +52,9 @@ impl GameImpl of GameTrait {
 
         let random: u256 = state.finalize().into();
         // we split the random number into 2 128-bit numbers.
-        let random1: u128 = (random & 0xffffffffffffffffffffffffffffffff).try_into().unwrap();
+        let random1 = random & 0xffffffffffffffffffffffffffffffff;
         // cant use shift here because it is not supported in felt.
-        let random2: u128 = (random.try_into().unwrap() - random1).try_into().unwrap();
+        let random2 = random - random1;
 
         // we can have a maximum of 10 bullets.
         Shotgun {

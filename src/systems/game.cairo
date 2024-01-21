@@ -10,7 +10,10 @@ trait IGame<TContractState> {
 #[dojo::contract]
 mod game {
     use super::IGame;
-    use buckshot_roulette::models::{game::{Game, GameTrait}, player::Player, round::Round, round::Shotgun};
+    use buckshot_roulette::models::{
+        game::{Game, GameTrait}, player::GamePlayer, round::Round, round::Shotgun, player::Player,
+        player::PlayerTrait
+    };
     use starknet::{get_caller_address};
 
     #[external(v0)]
@@ -30,27 +33,30 @@ mod game {
             // create game
             set!(
                 world,
-                (Game {
-                    game_id,
-                    current_round: 0,
-                    rounds: rounds.try_into().unwrap(),
-                    players: 1,
-                    max_players,
-                    shotgun_nonce: 0,
-                    winner: 0,
-                }, Player {
-                    game_id,
-                    player_id: 0,
-                    address: player,
-                    health: 8,
-                    score: 0,
-
-                    knives: 0,
-                    cigarettes: 0,
-                    glasses: 0,
-                    drinks: 0,
-                    handcuffs: 0,
-                })
+                (
+                    Game {
+                        game_id,
+                        current_round: 0,
+                        rounds: rounds.try_into().unwrap(),
+                        players: 1,
+                        max_players,
+                        shotgun_nonce: 0,
+                        winner: 0,
+                    },
+                    Player { player_id: player, game_id, game_player_id: 0, },
+                    GamePlayer {
+                        game_id,
+                        player_id: 0,
+                        address: player,
+                        health: 8,
+                        score: 0,
+                        knives: 0,
+                        cigarettes: 0,
+                        glasses: 0,
+                        drinks: 0,
+                        handcuffs: 0,
+                    }
+                )
             )
         }
 
@@ -59,10 +65,13 @@ mod game {
             let world = self.world();
 
             // get player address
-            let player = get_caller_address();
-
+            let caller = get_caller_address();
             // get game
             let mut game = get!(world, (game_id), Game);
+
+            // check if already joined a game
+            let player = get!(world, (caller), Player);
+            // player.assert_can_join();
 
             // check if game is full
             game.assert_can_join();
@@ -74,13 +83,13 @@ mod game {
                 world,
                 (
                     game,
-                    Player {
+                    Player { player_id: caller, game_id, game_player_id: game.players.into() - 1, },
+                    GamePlayer {
                         game_id,
-                        player_id: game.players.into(),
-                        address: player,
+                        player_id: game.players.into() - 1,
+                        address: caller,
                         health: 8,
                         score: 0,
-
                         knives: 0,
                         cigarettes: 0,
                         glasses: 0,
@@ -101,7 +110,7 @@ mod game {
             let mut game = get!(world, (game_id), Game);
 
             // index 0 is the host
-            let player = get!(world, (game_id, 0), Player);
+            let player = get!(world, (game_id, 0), GamePlayer);
 
             // check if caller is the host
             assert!(caller == player.address, "Only the host can start the game");

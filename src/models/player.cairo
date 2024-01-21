@@ -3,16 +3,16 @@ use starknet::ContractAddress;
 const MAX_PLAYER_ITEMS: u8 = 8;
 
 #[derive(Copy, Drop, Serde, Introspect, PartialEq)]
-enum PlayerState {
+enum GamePlayerState {
     Idle: (),
     Handcuffed: (),
 }
 
-impl PlayerStateFelt252 of Into<PlayerState, felt252> {
-    fn into(self: PlayerState) -> felt252 {
+impl GamePlayerStateFelt252 of Into<GamePlayerState, felt252> {
+    fn into(self: GamePlayerState) -> felt252 {
         match self {
-            PlayerState::Idle => 0,
-            PlayerState::Handcuffed => 1,
+            GamePlayerState::Idle => 0,
+            GamePlayerState::Handcuffed => 1,
         }
     }
 }
@@ -43,9 +43,24 @@ impl ItemFelt252 of Into<Item, felt252> {
     }
 }
 
-
 #[derive(Model, Copy, Drop, Serde)]
 struct Player {
+    #[key]
+    player_id: ContractAddress,
+
+    game_id: u32,
+    game_player_id: u8,
+}
+
+#[generate_trait]
+impl PlayerImpl of PlayerTrait {
+    fn assert_can_join(self: Player) {
+        assert(self.game_id == 0, 'Player is already in a game')
+    }
+}
+
+#[derive(Model, Copy, Drop, Serde)]
+struct GamePlayer {
     #[key]
     game_id: u32,
     #[key]
@@ -66,26 +81,26 @@ struct Player {
 }
 
 #[generate_trait]
-impl PlayerImpl of PlayerTrait {
-    fn assert_caller(self: Player, caller: ContractAddress) {
+impl GamePlayerImpl of GamePlayerTrait {
+    fn assert_caller(self: GamePlayer, caller: ContractAddress) {
         assert(self.address == caller, 'Not player')
     }
 
-    fn assert_alive(self: Player) {
-        assert(self.health > 0, 'Player is dead')
+    fn assert_alive(self: GamePlayer) {
+        assert(self.health > 0, 'GamePlayer is dead')
     }
 
-    fn assert_can_play(self: Player) {
+    fn assert_can_play(self: GamePlayer) {
         self.assert_alive();
     }
 
-    fn assert_can_use(self: Player, item: Item) {
+    fn assert_can_use(self: GamePlayer, item: Item) {
         match item {
-            Item::Knife => assert(self.knives > 0, 'Player has no knives'),
-            Item::Cigarette => assert(self.cigarettes > 0, 'Player has no cigarettes'),
-            Item::Glasses => assert(self.glasses > 0, 'Player has no glasses'),
-            Item::Drink => assert(self.drinks > 0, 'Player has no drinks'),
-            Item::Handcuffs => assert(self.handcuffs > 0, 'Player has no handcuffs'),
+            Item::Knife => assert(self.knives > 0, 'GamePlayer has no knives'),
+            Item::Cigarette => assert(self.cigarettes > 0, 'GamePlayer has no cigarettes'),
+            Item::Glasses => assert(self.glasses > 0, 'GamePlayer has no glasses'),
+            Item::Drink => assert(self.drinks > 0, 'GamePlayer has no drinks'),
+            Item::Handcuffs => assert(self.handcuffs > 0, 'GamePlayer has no handcuffs'),
         }
     }
 }

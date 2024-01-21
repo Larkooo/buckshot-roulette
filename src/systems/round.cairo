@@ -8,7 +8,7 @@ mod round {
     use super::IRound;
     use buckshot_roulette::models::{
         round::Round, round::RoundTrait, game::Game, game::GameTrait, round::ShotgunTrait,
-        player::Player, player::PlayerTrait
+        player::GamePlayer, player::GamePlayerTrait, player::Player, player::PlayerTrait
     };
     use starknet::{get_caller_address};
 
@@ -27,14 +27,14 @@ mod round {
 
             // get player from the alive player indices
             let alive_players = game.players - round.dead_players;
-            let mut player = get!(world, (game_id, round.current_player(alive_players)), Player);
+            let mut player = get!(world, (game_id, round.current_player(alive_players)), GamePlayer);
             // assert that the player is the caller
             player.assert_caller(caller);
             // assert that the player is alive
             player.assert_alive();
 
             // get the player to shoot
-            let mut target_player = get!(world, (game_id, target_player), Player);
+            let mut target_player = get!(world, (game_id, target_player), GamePlayer);
 
             // check if no more shotgun bullets, if so, generate new shotgun
             if round.shotgun.real_bullets == 0 && round.shotgun.fake_bullets == 0 {
@@ -75,11 +75,18 @@ mod round {
                             break;
                         }
 
-                        let current_player = get!(world, (game_id, current_player_id), Player);
+                        let current_player = get!(world, (game_id, current_player_id), GamePlayer);
                         if current_player.score > best_player {
                             best_player = current_player.score;
                         }
                         current_player_id += 1;
+
+                        // reset player
+                        set!(world, (Player {
+                            player_id: current_player.address,
+                            game_id: 0,
+                            game_player_id: 0,
+                        }));
                     };
 
                     // set the winner
