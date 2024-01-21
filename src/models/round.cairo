@@ -15,11 +15,20 @@ struct Round {
 
     current_turn: ContractAddress,
     shotgun: Shotgun,
+
+    winner: ContractAddress,
 }
+
+
 
 #[generate_trait]
 impl RoundImpl of RoundTrait {
+    fn assert_ongoing(self: Round) {
+        assert(self.winner == 0, 'Game is over');
+    }
+
     fn assert_turn(self: Round, player: ContractAddress) {
+        assert_ongoing(self);
         assert(self.current_turn == player, 'Not your turn');
     }
 }
