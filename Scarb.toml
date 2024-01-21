@@ -1,7 +1,7 @@
 [package]
 cairo-version = "2.4.0"
-name = "dojo_starter"
-version = "0.4.4"
+name = "buckshot_roulette"
+version = "0.0.1"
 
 [cairo]
 sierra-replace-ids = true
@@ -28,6 +28,6 @@ icon_uri = "file://assets/icon.png"
 website = "https://github.com/dojoengine/dojo-starter"
 
 [tool.dojo.world.socials]
-x = "https://x.com/ohayo_dojo"
-discord = "https://discord.gg/FB2wR6uF"
-github = "https://github.com/dojoengine/dojo-starter"
+x = "https://x.com/aym_dm"
+#discord = "larko"
+github = "https://github.com/larkooo"
