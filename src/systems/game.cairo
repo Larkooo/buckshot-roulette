@@ -132,9 +132,9 @@ mod game {
             };
 
             let mut seed = PoseidonTrait::new();
-            seed.update(game_id.into());
-            seed.update(game.rounds.into());
-            seed.update(player.address.into());
+            seed = seed.update(game_id.into());
+            seed = seed.update(game.rounds.into());
+            seed = seed.update(player.address.into());
 
             round.new_shotgun(seed.finalize());
 
