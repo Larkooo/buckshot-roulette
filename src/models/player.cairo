@@ -1,5 +1,6 @@
 use starknet::ContractAddress;
 
+const PLAYER_HEALTH: u8 = 3;
 const MAX_PLAYER_ITEMS: u8 = 8;
 
 #[derive(Copy, Drop, Serde, Introspect, PartialEq)]

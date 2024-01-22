@@ -14,15 +14,25 @@ struct Shotgun {
 
 #[generate_trait]
 impl ShotgunImpl of ShotgunTrait {
+    fn new() -> Shotgun {
+        Shotgun {
+            seed: 0,
+            real_bullets: 0,
+            fake_bullets: 0,
+            nonce: 0,
+        }
+    }
+
     fn shoot(ref self: Shotgun, target: ContractAddress) -> bool {
         assert(self.real_bullets > 0 && self.fake_bullets > 0, 'No more boullets');
 
         let mut state = PoseidonTrait::new();
-        state.update(self.seed.try_into().unwrap());
-        state.update(self.real_bullets.into());
-        state.update(self.fake_bullets.into());
-        state.update(self.nonce);
-        state.update(target.into());
+        state = state.update(self.seed.try_into().unwrap());
+        state = state.update(self.real_bullets.into());
+        state = state.update(self.fake_bullets.into());
+        state = state.update(target.into());
+        state = state.update(self.nonce);
+        self.nonce += 1;
 
         let random: u256 = state.finalize().into();
         let random: u8 = (random % 2).try_into().unwrap();
@@ -30,8 +40,6 @@ impl ShotgunImpl of ShotgunTrait {
 
         self.real_bullets -= random;
         self.fake_bullets -= 1 - random;
-
-        self.nonce += 1;
 
         is_real
     }
@@ -47,8 +55,10 @@ struct Round {
     dead_players: u8,
 
     current_turn: u32,
-    shotgun: Shotgun,
 
+    shotgun: Shotgun,
+    shotgun_nonce: felt252,
+    
     winner: u8,
 }
 
@@ -68,5 +78,30 @@ impl RoundImpl of RoundTrait {
     fn current_player(self: Round, player_count: u8) -> u8 {
         self.assert_ongoing(player_count);
         (self.current_turn).try_into().unwrap() % player_count
+    }
+
+    fn new_shotgun(ref self: Round, seed: felt252) {
+        assert(self.shotgun.real_bullets == 0 && self.shotgun.fake_bullets == 0, 'Shotgun is not empty');
+        
+        let mut state = PoseidonTrait::new();
+        state = state.update(seed);
+        state = state.update(self.round_id.into());
+        state = state.update(self.dead_players.into());
+        state = state.update(self.current_turn.into());
+        state = state.update(self.shotgun_nonce);
+        self.shotgun_nonce += 1;
+        
+        let random: u256 = state.finalize().into();
+        // we split the random number into 2 128-bit numbers.
+        let random1 = random.high;
+        let random2 = random.low;
+
+        // max of 10 bullets
+        self.shotgun = Shotgun {
+            seed: random,
+            real_bullets: (random1 % 5 + 1).try_into().unwrap(),
+            fake_bullets: (random2 % 5 + 1).try_into().unwrap(),
+            nonce: 0,
+        };
     }
 }

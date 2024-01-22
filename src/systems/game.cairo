@@ -11,10 +11,12 @@ trait IGame<TContractState> {
 mod game {
     use super::IGame;
     use buckshot_roulette::models::{
-        game::{Game, GameTrait}, player::GamePlayer, round::Round, round::Shotgun, player::Player,
-        player::PlayerTrait
+        game::{Game, GameTrait}, player::GamePlayer, round::Round, round::RoundTrait, round::Shotgun, round::ShotgunTrait, player::Player,
+        player::PlayerTrait, player::PLAYER_HEALTH
     };
     use starknet::{get_caller_address};
+    use core::poseidon::PoseidonTrait;
+    use core::hash::{HashStateTrait, HashStateExTrait};
 
     #[external(v0)]
     impl GameImpl of IGame<ContractState> {
@@ -40,7 +42,6 @@ mod game {
                         rounds: rounds.try_into().unwrap(),
                         players: 1,
                         max_players,
-                        shotgun_nonce: 0,
                         winner: 0,
                     },
                     Player { player_id: player, game_id, game_player_id: 0, },
@@ -48,7 +49,7 @@ mod game {
                         game_id,
                         player_id: 0,
                         address: player,
-                        health: 8,
+                        health: PLAYER_HEALTH,
                         score: 0,
                         knives: 0,
                         cigarettes: 0,
@@ -88,7 +89,7 @@ mod game {
                         game_id,
                         player_id: game.players.into() - 1,
                         address: caller,
-                        health: 8,
+                        health: PLAYER_HEALTH,
                         score: 0,
                         knives: 0,
                         cigarettes: 0,
@@ -120,14 +121,24 @@ mod game {
 
             // start game
             game.current_round = 1;
-            let round = Round {
+            let mut round = Round {
                 game_id,
                 round_id: game.current_round,
                 dead_players: 0,
                 current_turn: 0,
-                shotgun: game.generate_shotgun(),
+                shotgun: ShotgunTrait::new(),
+                shotgun_nonce: 0,
                 winner: 0.try_into().unwrap(),
             };
+
+            let mut seed = PoseidonTrait::new();
+            seed.update(game_id.into());
+            seed.update(game.rounds.into());
+            seed.update(player.address.into());
+
+            round.new_shotgun(seed.finalize());
+
+            set!(world, (game, round))
         }
     }
 }
